@@ -7,7 +7,7 @@ export class HealthController {
   constructor(
     private health: HealthCheckService,
     private readonly service: HealthService,
-  ) { }
+  ) {}
 
   @Get()
   @HealthCheck()
