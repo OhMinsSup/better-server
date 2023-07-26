@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import {
   FastifyAdapter,
   NestFastifyApplication,
@@ -22,6 +22,11 @@ async function bootstrap() {
 
   // Apply validation pipes globally
   app.useGlobalPipes(new ValidationPipe());
+
+  app.enableVersioning({
+    type: VersioningType.HEADER,
+    header: 'X-API-Version',
+  });
 
   const config = app.get(ConfigService);
 
