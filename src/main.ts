@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import {
   FastifyAdapter,
@@ -20,7 +21,6 @@ async function bootstrap() {
     }),
   );
 
-  // Apply validation pipes globally
   app.useGlobalPipes(new ValidationPipe());
 
   app.enableVersioning({
@@ -53,7 +53,27 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.register(helmet);
+  const swagger = new DocumentBuilder()
+    .setTitle('API Document')
+    .setDescription('API Document')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .addCookieAuth('access_token')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swagger);
+  SwaggerModule.setup('api/docs', app, document);
+
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: [`'self'`],
+        styleSrc: [`'self'`, `'unsafe-inline'`],
+        imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
+        scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
+      },
+    },
+  });
   await app.register(fastifyCsrf);
   await app.register(compression);
 
