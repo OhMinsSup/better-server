@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import { SkipThrottle } from '@nestjs/throttler';
 import { HealthService } from './health.service';
 
+@SkipThrottle()
 @Controller('api/health')
 export class HealthController {
   constructor(
