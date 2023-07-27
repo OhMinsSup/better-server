@@ -8,21 +8,34 @@ export class EnvironmentVariables {
   @IsString()
   DATABASE_URL: string;
 
-  // Jwt
+  // Cookie
   @IsString()
-  ACCESS_TOKEN_SECRET: string;
+  COOKIE_SECRET: string;
+
+  @IsString()
+  ACCESS_TOKEN_NAME: string;
+
+  @IsString()
+  REFRESH_TOKEN_NAME: string;
+
+  @IsString()
+  COOKIE_PATH: string;
+
+  @IsString()
+  COOKIE_SAMESITE: string;
+
+  @IsString()
+  COOKIE_DOMAIN: string;
+
+  // Jwt
   @IsDuration()
   ACCESS_TOKEN_EXPIRES_IN: string;
 
-  @IsString()
-  REFRESH_TOKEN_SECRET: string;
   @IsDuration()
   REFRESH_TOKEN_EXPIRES_IN: string;
 
-  @IsString()
-  LOGIN_TOKEN_SECRET: string;
   @IsDuration()
-  LOGIN_TOKEN_EXPIRES_IN: string;
+  EMAIL_TOKEN_EXPIRES_IN: string;
 
   // Auth
   @IsString()

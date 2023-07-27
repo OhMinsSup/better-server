@@ -1,9 +1,11 @@
-import { Body, Controller, Post, Version } from '@nestjs/common';
+import { Body, Controller, Post, Res, Version } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { AuthService } from '../services/auth.service';
 import { AnonymousInput } from '../dto/anonymous.input';
-import { VersionStrategy } from 'src/utils/version';
+import { VersionStrategy } from '../../utils/version';
+
+import type { FastifyReply } from 'fastify';
 
 @ApiTags('인증')
 @Controller('api/auth')
@@ -20,12 +22,15 @@ export class AuthController {
     description: '익명 로그인',
     type: AnonymousInput,
   })
-  signInForAnonymous(@Body() input: AnonymousInput) {
-    return this.service.signInForAnonymous(input);
-  }
-
-  @Post('sign-in')
-  signIn() {
-    return null;
+  async signInForAnonymous(
+    @Body() input: AnonymousInput,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const data = await this.service.signInForAnonymous(input);
+    this.service.setCookies(reply, {
+      accessToken: data.result.accessToken,
+      refreshToken: data.result.refreshToken,
+    });
+    return data;
   }
 }

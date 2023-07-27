@@ -5,28 +5,40 @@ import { ConfigService } from '@nestjs/config';
 export class EnvironmentService {
   constructor(private configService: ConfigService) {}
 
-  getAccessTokenSecret(): string {
-    return this.configService.get<string>('ACCESS_TOKEN_SECRET')!;
+  getCookieSecret(): string {
+    return this.configService.get<string>('COOKIE_SECRET');
+  }
+
+  getAccessTokenName(): string {
+    return this.configService.get<string>('ACCESS_TOKEN_NAME');
+  }
+
+  getRefreshTokenName(): string {
+    return this.configService.get<string>('REFRESH_TOKEN_NAME');
+  }
+
+  getCookiePath(): string {
+    return this.configService.get<string>('COOKIE_PATH');
+  }
+
+  getCookieSameSite(): 'lax' | 'none' | 'strict' {
+    return this.configService.get<'lax' | 'none' | 'strict'>('COOKIE_SAMESITE');
+  }
+
+  getCookieDomain(): string {
+    return this.configService.get<string>('COOKIE_DOMAIN');
   }
 
   getAccessTokenExpiresIn(): string {
-    return this.configService.get<string>('ACCESS_TOKEN_EXPIRES_IN')!;
-  }
-
-  getRefreshTokenSecret(): string {
-    return this.configService.get<string>('REFRESH_TOKEN_SECRET')!;
+    return this.configService.get<string>('ACCESS_TOKEN_EXPIRES_IN');
   }
 
   getRefreshTokenExpiresIn(): string {
-    return this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN')!;
+    return this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN');
   }
 
-  getLoginTokenSecret(): string {
-    return this.configService.get<string>('LOGIN_TOKEN_SECRET')!;
-  }
-
-  getLoginTokenExpiresIn(): string {
-    return this.configService.get<string>('LOGIN_TOKEN_EXPIRES_IN')!;
+  getEmailTokenExpiresIn(): string {
+    return this.configService.get<string>('EMAIL_TOKEN_EXPIRES_IN');
   }
 
   getKakaoClientId(): string {
