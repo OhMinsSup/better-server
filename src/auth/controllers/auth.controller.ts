@@ -23,8 +23,8 @@ export class AuthController {
     type: AnonymousInput,
   })
   async signInForAnonymous(
-    @Body() input: AnonymousInput,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Body() input: AnonymousInput,
   ) {
     const data = await this.service.signInForAnonymous(input);
     this.service.setCookies(reply, {

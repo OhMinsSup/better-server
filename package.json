@@ -23,8 +23,6 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@dicebear/collection": "^6.0.4",
-    "@dicebear/core": "^6.0.4",
     "@fastify/compress": "^6.4.0",
     "@fastify/cookie": "^8.3.0",
     "@fastify/csrf-protection": "^6.3.0",
@@ -40,6 +38,7 @@
     "@nestjs/terminus": "^10.0.1",
     "@nestjs/throttler": "^4.2.1",
     "@prisma/client": "^5.0.0",
+    "axios": "^1.4.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "date-fns": "^2.30.0",

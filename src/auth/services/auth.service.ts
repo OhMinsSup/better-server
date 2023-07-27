@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import { addMilliseconds } from 'date-fns';
-import ms from 'ms';
+import axios from 'axios';
 
 import { DatabaseService } from '../../database/database.service';
 import { EnvironmentService } from '../../integrations/environment/environment.service';
@@ -37,12 +36,12 @@ export class AuthService {
     reply.setCookie(
       this.env.getAccessTokenName(),
       tokens.accessToken,
-      this._generateAccessTokenOpts(),
+      this.env.generateAccessTokenOpts(),
     );
     reply.setCookie(
       this.env.getRefreshTokenName(),
       tokens.refreshToken,
-      this._generateRefreshTokenOpts(),
+      this.env.generateRefreshTokenOpts(),
     );
   }
 
@@ -68,7 +67,7 @@ export class AuthService {
         const refreshTokenData = await this.prisma.refreshToken.create({
           data: {
             userId: userData.id,
-            expiresAt: this._getRefreshTokenExpiresAt(),
+            expiresAt: this.env.getRefreshTokenExpiresAt(),
           },
         });
         // 유저가 존재하면 토근 발급
@@ -124,7 +123,7 @@ export class AuthService {
     const refreshTokenData = await this.prisma.refreshToken.create({
       data: {
         userId: userData.id,
-        expiresAt: this._getRefreshTokenExpiresAt(),
+        expiresAt: this.env.getRefreshTokenExpiresAt(),
       },
     });
 
@@ -172,14 +171,18 @@ export class AuthService {
     const count = await this.getCreateCount();
     const seed = `anonymous@${count}`;
 
-    const { createAvatar } = await import('@dicebear/core');
-    const { botttsNeutral } = await import('@dicebear/collection');
-
-    const avatar = createAvatar(botttsNeutral, {
-      seed,
-    });
-
-    const dataUrl = await avatar.toDataUri();
+    const { data: svgData } = await axios.get(
+      'https://api.dicebear.com/6.x/bottts-neutral/svg',
+      {
+        params: {
+          seed,
+        },
+        responseType: 'blob',
+      },
+    );
+    const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svgData).toString(
+      'base64',
+    )}`;
 
     const body = {
       username: seed,
@@ -195,53 +198,5 @@ export class AuthService {
    */
   private async _getRandomJwtSecret() {
     return crypto.randomBytes(64).toString('hex');
-  }
-
-  /**
-   * @private
-   * @description 쿠키 refresh 토큰 만료 시간
-   */
-  private _getRefreshTokenExpiresAt() {
-    const expiresIn = this.env.getRefreshTokenExpiresIn();
-    const expiresAt = addMilliseconds(new Date().getTime(), ms(expiresIn));
-    return expiresAt;
-  }
-
-  /**
-   * @private
-   * @description 쿠키 access 토큰 만료 시간
-   */
-  private _getAccessTokenExpiresAt() {
-    const expiresIn = this.env.getAccessTokenExpiresIn();
-    const expiresAt = addMilliseconds(new Date().getTime(), ms(expiresIn));
-    return expiresAt;
-  }
-
-  /**
-   * @private
-   * @description 쿠키 refresh 토큰 옵션 생성
-   */
-  private _generateRefreshTokenOpts() {
-    return {
-      httpOnly: true,
-      path: this.env.getCookiePath(),
-      domain: this.env.getCookieDomain(),
-      sameSite: this.env.getCookieSameSite(),
-      expires: this._getRefreshTokenExpiresAt(),
-    };
-  }
-
-  /**
-   * @private
-   * @description 쿠키 access 토큰 옵션 생성
-   */
-  private _generateAccessTokenOpts() {
-    return {
-      httpOnly: true,
-      path: this.env.getCookiePath(),
-      domain: this.env.getCookieDomain(),
-      sameSite: this.env.getCookieSameSite(),
-      expires: this._getAccessTokenExpiresAt(),
-    };
   }
 }

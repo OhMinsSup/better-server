@@ -10,6 +10,7 @@ import {
 import helmet from '@fastify/helmet';
 import fastifyCsrf from '@fastify/csrf-protection';
 import compression from '@fastify/compress';
+import fastifyCookie from '@fastify/cookie';
 
 import { AppModule } from './app.module';
 
@@ -73,6 +74,9 @@ async function bootstrap() {
         scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
       },
     },
+  });
+  await app.register(fastifyCookie, {
+    secret: config.get('COOKIE_SECRET'),
   });
   await app.register(fastifyCsrf);
   await app.register(compression);
