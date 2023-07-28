@@ -1,5 +1,8 @@
-import crypto from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import axios from 'axios';
 
 import { DatabaseService } from '../../database/database.service';
@@ -7,9 +10,11 @@ import { EnvironmentService } from '../../integrations/environment/environment.s
 import { TokenService } from './token.service';
 
 import { AnonymousInput } from '../dto/anonymous.input';
+import { RefreshInput } from '../dto/refresh.input';
 
 import { USER_SELECT } from '../select/user.select';
 import { EXCEPTION_CODE } from '../../utils/exceptionCode';
+import { assert } from '../../utils/assert';
 
 import type { FastifyReply } from 'fastify';
 
@@ -28,21 +33,96 @@ export class AuthService {
 
   /**
    * @public
-   * @description 쿠키 설정
-   * @param {FastifyReply} reply
-   * @param {Tokens} tokens
+   * @description 토큰 재발급
+   * @param {RefreshInput} input
    */
-  setCookies(reply: FastifyReply, tokens: Tokens) {
-    reply.setCookie(
-      this.env.getAccessTokenName(),
-      tokens.accessToken,
-      this.env.generateAccessTokenOpts(),
+  async refresh(input: RefreshInput) {
+    const { refreshToken } = input;
+    const jwtPayload = this.token.verifyJwt(refreshToken);
+    // 토큰 타입이 refresh-token이 아닌 경우
+    if (jwtPayload.type !== 'refresh-token') {
+      return {
+        resultCode: EXCEPTION_CODE.INVALID_TOKEN,
+        message: 'Invalid token',
+        error: 'Invalid token',
+        result: null,
+      };
+    }
+    // 토큰이 유효하지 않은 경우
+    const tokenData = await this.prisma.refreshToken.findFirst({
+      where: {
+        id: jwtPayload.jti,
+      },
+    });
+
+    assert(tokenData, "This refresh token doesn't exist", NotFoundException);
+
+    const userData = await this.prisma.user.findUnique({
+      where: {
+        id: jwtPayload.id,
+      },
+      include: {
+        refreshTokens: true,
+      },
+    });
+
+    assert(userData, 'User not found', NotFoundException);
+
+    if (tokenData.isRevoked) {
+      // Revoke all user refresh tokens
+      await this.prisma.refreshToken.updateMany({
+        where: {
+          id: {
+            in: userData.refreshTokens.map(({ id }) => id),
+          },
+        },
+        data: {
+          isRevoked: true,
+        },
+      });
+    }
+
+    assert(
+      !tokenData.isRevoked,
+      'Suspicious activity detected, this refresh token has been revoked. All tokens has been revoked.',
+      ForbiddenException,
     );
-    reply.setCookie(
-      this.env.getRefreshTokenName(),
-      tokens.refreshToken,
-      this.env.generateRefreshTokenOpts(),
+
+    const { id } = tokenData;
+
+    // Revoke old refresh token
+    await this.prisma.refreshToken.update({
+      where: {
+        id,
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
+
+    const refreshTokenData = await this.prisma.refreshToken.create({
+      data: {
+        userId: userData.id,
+        expiresAt: this.env.getRefreshTokenExpiresAt(),
+      },
+    });
+
+    // 토큰 재발급
+    const accessToken = this.token.getJwtToken(userData.id);
+    const newRefreshToken = this.token.getJwtRefreshToken(
+      userData.id,
+      refreshTokenData.id,
     );
+
+    return {
+      resultCode: EXCEPTION_CODE.OK,
+      message: null,
+      error: null,
+      result: {
+        accessToken,
+        refreshToken: newRefreshToken,
+      },
+    };
   }
 
   /**
@@ -76,17 +156,12 @@ export class AuthService {
           message: null,
           error: null,
           result: {
-            accessToken: this.token.getJwtToken(
-              userData.id,
-              userData.jwtSecret,
-              {
-                isAnonymous: true,
-              },
-            ),
+            accessToken: this.token.getJwtToken(userData.id, {
+              isAnonymous: true,
+            }),
             refreshToken: this.token.getJwtRefreshToken(
               userData.id,
               refreshTokenData.id,
-              userData.jwtSecret,
               {
                 isAnonymous: true,
               },
@@ -103,12 +178,10 @@ export class AuthService {
     await this.prisma.userCount.create({
       data: undefined,
     });
-    const jwtSecret = await this._getRandomJwtSecret();
     // 유저 생성
     const userData = await this.prisma.user.create({
       data: {
         username: body.username,
-        jwtSecret,
         isAnonymous: true,
         lastActiveAt,
         lastSignedInAt,
@@ -133,13 +206,12 @@ export class AuthService {
       message: null,
       error: null,
       result: {
-        accessToken: this.token.getJwtToken(userData.id, jwtSecret, {
+        accessToken: this.token.getJwtToken(userData.id, {
           isAnonymous: true,
         }),
         refreshToken: this.token.getJwtRefreshToken(
           userData.id,
           refreshTokenData.id,
-          jwtSecret,
           {
             isAnonymous: true,
           },
@@ -164,13 +236,31 @@ export class AuthService {
   }
 
   /**
+   * @public
+   * @description 쿠키 설정
+   * @param {FastifyReply} reply
+   * @param {Tokens} tokens
+   */
+  setCookies(reply: FastifyReply, tokens: Tokens) {
+    reply.setCookie(
+      this.env.getAccessTokenName(),
+      tokens.accessToken,
+      this.env.generateAccessTokenOpts(),
+    );
+    reply.setCookie(
+      this.env.getRefreshTokenName(),
+      tokens.refreshToken,
+      this.env.generateRefreshTokenOpts(),
+    );
+  }
+
+  /**
    * @private
    * @description 익명 로그인 등록을 위한 유저 정보 생성
    */
   private async _makeAnonymousUser() {
     const count = await this.getCreateCount();
     const seed = `anonymous@${count}`;
-
     const { data: svgData } = await axios.get(
       'https://api.dicebear.com/6.x/bottts-neutral/svg',
       {
@@ -183,20 +273,10 @@ export class AuthService {
     const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svgData).toString(
       'base64',
     )}`;
-
     const body = {
       username: seed,
       image: dataUrl,
     };
-
     return body;
-  }
-
-  /**
-   * @private
-   * @description JWT 비밀키 생성
-   */
-  private async _getRandomJwtSecret() {
-    return crypto.randomBytes(64).toString('hex');
   }
 }

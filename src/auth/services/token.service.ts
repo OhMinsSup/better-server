@@ -1,5 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { TokenExpiredError } from 'jsonwebtoken';
 import { EnvironmentService } from '../../integrations/environment/environment.service';
 import { DatabaseService } from '../../database/database.service';
 
@@ -14,10 +19,12 @@ export class TokenService {
   /**
    * @description API 요청에 사용되어 저장된 세션 토큰을 반환합니다. 클라이언트 브라우저 쿠키에서 로그인 상태를 유지.
    * @param {string} id
-   * @param {string} jwtSecret
+   * @param {Record<string, any>?} payload
    */
-  getJwtToken(id: string, jwtSecret: string, payload?: Record<string, any>) {
+  getJwtToken(id: string, payload?: Record<string, any>) {
     const expiresIn = this.env.getAccessTokenExpiresIn();
+    const jwtSecret = this.env.getJwtSecret();
+    const issuer = this.env.getJwtIssuer();
     return this.jwt.sign(
       {
         id,
@@ -26,18 +33,26 @@ export class TokenService {
       },
       {
         expiresIn,
+        issuer,
         secret: jwtSecret,
       },
     );
   }
 
+  /**
+   * @description refresh token 발급
+   * @param {string} id
+   * @param {string} tokenId
+   * @param {Record<string, any>?} payload
+   */
   getJwtRefreshToken(
     id: string,
     tokenId: string,
-    jwtSecret: string,
     payload?: Record<string, any>,
   ) {
     const expiresIn = this.env.getRefreshTokenExpiresIn();
+    const jwtSecret = this.env.getJwtSecret();
+    const issuer = this.env.getJwtIssuer();
     return this.jwt.sign(
       {
         id,
@@ -46,6 +61,7 @@ export class TokenService {
       },
       {
         expiresIn,
+        issuer,
         secret: jwtSecret,
         jwtid: tokenId,
       },
@@ -55,14 +71,12 @@ export class TokenService {
   /**
    * @description * 이메일에서 로그인할 때만 사용되는 임시 토큰 생성
    * @param {string} id
-   * @param {string} jwtSecret
+   * @param {Record<string, any>?} payload
    */
-  getEmailSignInToken(
-    id: string,
-    jwtSecret: string,
-    payload?: Record<string, any>,
-  ) {
+  getEmailSignInToken(id: string, payload?: Record<string, any>) {
     const expiresIn = this.env.getEmailTokenExpiresIn();
+    const jwtSecret = this.env.getJwtSecret();
+    const issuer = this.env.getJwtIssuer();
     return this.jwt.sign(
       {
         id,
@@ -72,24 +86,29 @@ export class TokenService {
       },
       {
         expiresIn,
+        issuer,
         secret: jwtSecret,
       },
     );
   }
 
   /**
-   * @description rotateJwtSecret()에서 사용되는 랜덤한 JWT 시크릿을 현재 사용자에게 할당
-   * @param {string} userId
-   * @param {string} jwtSecret
+   * @description 토큰 검증
+   * @param {string} token
    */
-  rotateJwtSecret(userId: string, jwtSecret: string) {
-    return this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        jwtSecret,
-      },
-    });
+  verifyJwt(token: string) {
+    try {
+      const jwtSecret = this.env.getJwtSecret();
+      return this.jwt.verify(
+        token,
+        jwtSecret ? { secret: jwtSecret } : undefined,
+      );
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Token has expired.');
+      } else {
+        throw new UnprocessableEntityException();
+      }
+    }
   }
 }

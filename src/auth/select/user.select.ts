@@ -2,7 +2,6 @@ import { Prisma } from '@prisma/client';
 
 export const USER_SELECT = Prisma.validator<Prisma.UserSelect>()({
   id: true,
-  jwtSecret: true,
   username: true,
   email: true,
   emailVerified: true,

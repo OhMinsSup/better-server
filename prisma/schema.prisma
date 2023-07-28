@@ -15,7 +15,6 @@ model User {
     username       String
     email          String?        @unique
     emailVerified  DateTime?
-    jwtSecret      String
     isAnonymous    Boolean        @default(false)
     isAdmin        Boolean        @default(false)
     isSuspended    Boolean        @default(false)

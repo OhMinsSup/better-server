@@ -37,6 +37,12 @@ export class EnvironmentVariables {
   @IsDuration()
   EMAIL_TOKEN_EXPIRES_IN: string;
 
+  @IsString()
+  JWT_SECRET: string;
+
+  @IsString()
+  JWT_ISSUER: string;
+
   // Auth
   @IsString()
   KAKAO_CLIENT_ID: string;

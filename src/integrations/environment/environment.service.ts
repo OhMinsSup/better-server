@@ -7,6 +7,7 @@ import ms from 'ms';
 export class EnvironmentService {
   constructor(private configService: ConfigService) {}
 
+  //  cookie
   getCookieSecret(): string {
     return this.configService.get<string>('COOKIE_SECRET');
   }
@@ -31,6 +32,16 @@ export class EnvironmentService {
     return this.configService.get<string>('COOKIE_DOMAIN');
   }
 
+  // jwt
+
+  getJwtSecret(): string {
+    return this.configService.get<string>('JWT_SECRET');
+  }
+
+  getJwtIssuer(): string {
+    return this.configService.get<string>('JWT_ISSUER');
+  }
+
   getAccessTokenExpiresIn(): string {
     return this.configService.get<string>('ACCESS_TOKEN_EXPIRES_IN');
   }
@@ -43,6 +54,8 @@ export class EnvironmentService {
     return this.configService.get<string>('EMAIL_TOKEN_EXPIRES_IN');
   }
 
+  // kakao
+
   getKakaoClientId(): string {
     return this.configService.get<string>('KAKAO_CLIENT_ID');
   }
@@ -50,6 +63,8 @@ export class EnvironmentService {
   getKakaoClientSecret(): string {
     return this.configService.get<string>('KAKAO_CLIENT_SECRET');
   }
+
+  // etc
 
   getRefreshTokenExpiresAt() {
     const expiresIn = this.getRefreshTokenExpiresIn();

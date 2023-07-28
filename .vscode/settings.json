@@ -1,0 +1,11 @@
+{
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "name": "better_db",
+      "database": "${workspaceFolder:better-server}/prisma/dev.db"
+    }
+  ],
+  "sqltools.useNodeRuntime": true
+}
