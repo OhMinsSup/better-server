@@ -9,6 +9,7 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { RateLimiterStrategy } from './utils/rateLimiter';
+import { AuthenticationGuardModule } from './guards/authentication.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RateLimiterStrategy } from './utils/rateLimiter';
     JwtModule.register({
       global: true,
     }),
+    AuthenticationGuardModule,
     HealthModule,
     DatabaseModule,
     AuthModule,
