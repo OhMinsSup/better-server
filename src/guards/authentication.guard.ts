@@ -4,15 +4,21 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { EnvironmentService } from '../integrations/environment/environment.service';
 import { TokenService } from '../auth/services/token.service';
 import { DatabaseService } from '../database/database.service';
 
+// types
+import { JwtPayload, TokenExpiredError } from 'jsonwebtoken';
+
+interface Payload {
+  id: string;
+  type: string;
+}
+
 @Injectable()
 export class AuthenticationGuard implements CanActivate {
   constructor(
-    private readonly jwt: JwtService,
     private readonly prisma: DatabaseService,
     private readonly token: TokenService,
     private readonly env: EnvironmentService,
@@ -45,10 +51,42 @@ export class AuthenticationGuard implements CanActivate {
       token = request.cookies[this.env.getAccessTokenName()];
     }
 
-    if (!token) {
+    const refreshToken = request.cookies[this.env.getRefreshTokenName()];
+    if (!refreshToken && !token) {
       return true;
     }
 
+    if (refreshToken && !token) {
+      request.isExpiredToken = true;
+      return true;
+    }
+
+    let payload: (JwtPayload & Payload) | null = null;
+    try {
+      payload = await this.token.verifyJwt(token);
+    } catch (error) {
+      payload = null;
+      if (error instanceof TokenExpiredError) {
+        request.isExpiredToken = true;
+      }
+    }
+
+    if (!payload) {
+      return true;
+    }
+
+    if (payload.type !== 'session') {
+      request.isExpiredToken = true;
+      return true;
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: payload.id,
+      },
+    });
+
+    request.user = user;
     return true;
   }
 }

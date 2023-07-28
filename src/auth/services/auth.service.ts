@@ -38,7 +38,7 @@ export class AuthService {
    */
   async refresh(input: RefreshInput) {
     const { refreshToken } = input;
-    const jwtPayload = this.token.verifyJwt(refreshToken);
+    const jwtPayload = await this.token.verifyJwt(refreshToken);
     // 토큰 타입이 refresh-token이 아닌 경우
     if (jwtPayload.type !== 'refresh-token') {
       return {

@@ -1,10 +1,5 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { TokenExpiredError } from 'jsonwebtoken';
 import { EnvironmentService } from '../../integrations/environment/environment.service';
 import { DatabaseService } from '../../database/database.service';
 
@@ -96,19 +91,15 @@ export class TokenService {
    * @description 토큰 검증
    * @param {string} token
    */
-  verifyJwt(token: string) {
+  async verifyJwt(token: string) {
     try {
       const jwtSecret = this.env.getJwtSecret();
-      return this.jwt.verify(
+      return this.jwt.verifyAsync(
         token,
         jwtSecret ? { secret: jwtSecret } : undefined,
       );
     } catch (error) {
-      if (error instanceof TokenExpiredError) {
-        throw new UnauthorizedException('Token has expired.');
-      } else {
-        throw new UnprocessableEntityException();
-      }
+      throw error;
     }
   }
 }
