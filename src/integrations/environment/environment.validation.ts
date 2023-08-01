@@ -49,6 +49,9 @@ export class EnvironmentVariables {
 
   @IsString()
   KAKAO_CLIENT_SECRET: string;
+
+  @IsString()
+  KAKAO_CALLBACK_URL: string;
 }
 
 export function validate(config: Record<string, unknown>) {

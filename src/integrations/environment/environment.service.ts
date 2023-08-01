@@ -60,6 +60,10 @@ export class EnvironmentService {
     return this.configService.get<string>('KAKAO_CLIENT_ID');
   }
 
+  getKakaoCallbackUrl(): string {
+    return this.configService.get<string>('KAKAO_CALLBACK_URL');
+  }
+
   getKakaoClientSecret(): string {
     return this.configService.get<string>('KAKAO_CLIENT_SECRET');
   }
