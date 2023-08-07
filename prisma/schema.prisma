@@ -26,6 +26,7 @@ model User {
     updatedAt      DateTime       @updatedAt
     profile        UserProfile?
     refreshTokens  RefreshToken[]
+    schedules      Schedule[]
 
     @@map(name: "users")
 }
@@ -58,4 +59,79 @@ model UserCount {
     id Int @id @default(autoincrement())
 
     @@map(name: "user_counts")
+}
+
+model Schedule {
+    id              Int             @id @default(autoincrement())
+    userId          String
+    title           String
+    content         String?
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    user            User            @relation(fields: [userId], references: [id])
+    places          Place[]
+    placeCategories PlaceCategory[]
+
+    @@map(name: "schedules")
+}
+
+model Place {
+    id         Int         @id @default(autoincrement())
+    name       String
+    address    String
+    latitude   Float
+    longitude  Float
+    createdAt  DateTime    @default(now())
+    updatedAt  DateTime    @updatedAt
+    schedule   Schedule?   @relation(fields: [scheduleId], references: [id])
+    scheduleId Int?
+    placeTags  PlaceTags[]
+
+    @@map(name: "places")
+}
+
+model PlaceCategory {
+    id             Int       @id @default(autoincrement())
+    fk_schedule_id Int?
+    fk_category_id Int?
+    createdAt      DateTime  @default(now())
+    updatedAt      DateTime  @updatedAt
+    schedule       Schedule? @relation(fields: [fk_schedule_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+    category       Category? @relation(fields: [fk_category_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+    @@unique([fk_schedule_id, fk_category_id])
+    @@map(name: "place_categories")
+}
+
+model Category {
+    id              Int             @id @default(autoincrement())
+    name            String          @unique
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+    placeCategories PlaceCategory[]
+
+    @@map(name: "categories")
+}
+
+model PlaceTags {
+    id          Int      @id @default(autoincrement())
+    fk_place_id Int?
+    fk_tag_id   Int?
+    created_at  DateTime @default(now())
+    updated_at  DateTime @updatedAt
+    place       Place?   @relation(fields: [fk_place_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+    tag         Tag?     @relation(fields: [fk_tag_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+    @@unique([fk_place_id, fk_tag_id])
+    @@map("place_tags")
+}
+
+model Tag {
+    id        Int         @id @default(autoincrement())
+    name      String      @unique
+    createdAt DateTime    @default(now())
+    updatedAt DateTime    @updatedAt
+    placeTags PlaceTags[]
+
+    @@map(name: "tags")
 }
