@@ -13,6 +13,7 @@ import compression from '@fastify/compress';
 import fastifyCookie from '@fastify/cookie';
 
 import { AppModule } from './app.module';
+import { VersionStrategy } from './utils/version';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -25,6 +26,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
 
   app.enableVersioning({
+    defaultVersion: VersionStrategy.current,
     type: VersioningType.HEADER,
     header: 'X-API-Version',
   });

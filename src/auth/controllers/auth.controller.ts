@@ -1,12 +1,11 @@
-import { Body, Controller, Post, Res, Version } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { AuthService } from '../services/auth.service';
 
 import { AnonymousInput } from '../dto/anonymous.input';
 import { RefreshInput } from '../dto/refresh.input';
-
-import { VersionStrategy } from '../../utils/version';
+import { SocialQuery } from '../dto/social.query';
 
 import type { FastifyReply } from 'fastify';
 
@@ -15,7 +14,24 @@ import type { FastifyReply } from 'fastify';
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 
-  @Version(VersionStrategy.current)
+  @Get('redirect/:provider')
+  @ApiOperation({
+    summary: '소셜 로그인 리다이렉트',
+  })
+  @ApiQuery({
+    required: false,
+    description: '소셜 로그인 쿼리스트링',
+    type: SocialQuery,
+  })
+  async redirect(
+    @Res() reply: FastifyReply,
+    @Param('provider') provider: string,
+    @Query() query: SocialQuery,
+  ) {
+    const link = this.service.getRedirectUrl(provider, query);
+    reply.status(302).redirect(link);
+  }
+
   @Post('anonymous')
   @ApiOperation({
     summary: '익명 로그인',
@@ -37,7 +53,6 @@ export class AuthController {
     return data;
   }
 
-  @Version(VersionStrategy.current)
   @Post('refresh')
   @ApiOperation({
     summary: '토큰 재발급',

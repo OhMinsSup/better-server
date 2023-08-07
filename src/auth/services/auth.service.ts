@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -8,9 +9,11 @@ import axios from 'axios';
 import { DatabaseService } from '../../database/database.service';
 import { EnvironmentService } from '../../integrations/environment/environment.service';
 import { TokenService } from './token.service';
+import { SocialService } from './social.service';
 
 import { AnonymousInput } from '../dto/anonymous.input';
 import { RefreshInput } from '../dto/refresh.input';
+import { SocialQuery } from '../dto/social.query';
 
 import { USER_SELECT } from '../select/user.select';
 import { EXCEPTION_CODE } from '../../utils/exceptionCode';
@@ -29,7 +32,20 @@ export class AuthService {
     private readonly prisma: DatabaseService,
     private readonly env: EnvironmentService,
     private readonly token: TokenService,
+    private readonly social: SocialService,
   ) {}
+
+  /**
+   * @public
+   * @description 소셜 리다이렉트 URL 반환
+   * @param {string} provider
+   * @param {SocialQuery} query
+   */
+  getRedirectUrl(provider: string, query: SocialQuery) {
+    const validated = ['kakao'].includes(provider);
+    assert(validated, 'Invalid provider', BadRequestException);
+    return this.social.generateSocialLoginLink(provider, query);
+  }
 
   /**
    * @public
