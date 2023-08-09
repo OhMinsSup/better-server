@@ -62,35 +62,20 @@ model UserCount {
 }
 
 model Schedule {
-    id              Int             @id @default(autoincrement())
-    userId          String
-    title           String
-    content         String?
-    createdAt       DateTime        @default(now())
-    updatedAt       DateTime        @updatedAt
-    user            User            @relation(fields: [userId], references: [id])
-    places          Place[]
-    placeCategories PlaceCategory[]
+    id                 Int                @id @default(autoincrement())
+    userId             String
+    title              String
+    content            String?
+    createdAt          DateTime           @default(now())
+    updatedAt          DateTime           @updatedAt
+    user               User               @relation(fields: [userId], references: [id])
+    places             Place[]
+    scheduleCategories ScheduleCategory[]
 
     @@map(name: "schedules")
 }
 
-model Place {
-    id         Int         @id @default(autoincrement())
-    name       String
-    address    String
-    latitude   Float
-    longitude  Float
-    createdAt  DateTime    @default(now())
-    updatedAt  DateTime    @updatedAt
-    schedule   Schedule?   @relation(fields: [scheduleId], references: [id])
-    scheduleId Int?
-    placeTags  PlaceTags[]
-
-    @@map(name: "places")
-}
-
-model PlaceCategory {
+model ScheduleCategory {
     id             Int       @id @default(autoincrement())
     fk_schedule_id Int?
     fk_category_id Int?
@@ -100,17 +85,33 @@ model PlaceCategory {
     category       Category? @relation(fields: [fk_category_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
 
     @@unique([fk_schedule_id, fk_category_id])
-    @@map(name: "place_categories")
+    @@map(name: "schedule_categories")
 }
 
 model Category {
-    id              Int             @id @default(autoincrement())
-    name            String          @unique
-    createdAt       DateTime        @default(now())
-    updatedAt       DateTime        @updatedAt
-    placeCategories PlaceCategory[]
+    id                 Int                @id @default(autoincrement())
+    name               String             @unique
+    createdAt          DateTime           @default(now())
+    updatedAt          DateTime           @updatedAt
+    scheduleCategories ScheduleCategory[]
 
     @@map(name: "categories")
+}
+
+model Place {
+    id          Int           @id @default(autoincrement())
+    name        String
+    address     String
+    latitude    Float
+    longitude   Float
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    scheduleId  Int?
+    schedule    Schedule?     @relation(fields: [scheduleId], references: [id])
+    placeTags   PlaceTags[]
+    placeImages PlaceImages[]
+
+    @@map(name: "places")
 }
 
 model PlaceTags {
@@ -134,4 +135,29 @@ model Tag {
     placeTags PlaceTags[]
 
     @@map(name: "tags")
+}
+
+model PlaceImages {
+    id          Int      @id @default(autoincrement())
+    fk_place_id Int?
+    fk_image_id Int?
+    created_at  DateTime @default(now())
+    updated_at  DateTime @updatedAt
+    place       Place?   @relation(fields: [fk_place_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+    image       Image?   @relation(fields: [fk_image_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+    @@unique([fk_place_id, fk_image_id])
+    @@map(name: "place_images")
+}
+
+model Image {
+    id          Int           @id @default(autoincrement())
+    cfId        String        @unique
+    url         String
+    metadata    Bytes?
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    PlaceImages PlaceImages[]
+
+    @@map(name: "images")
 }
